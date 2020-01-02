@@ -38,7 +38,7 @@ public class ClienteController {
 
 	@Autowired
 	private IClienteService clienteService;
-
+	
 	private final Logger log = LoggerFactory.getLogger(getClass());
 
 	@GetMapping(value = "/ver/{id}")
@@ -46,23 +46,23 @@ public class ClienteController {
 
 		Cliente cliente = clienteService.findOne(id);
 		if (cliente == null) {
-			flash.addFlashAttribute("Error", "El cliente no existe en la base de datos");
+			flash.addFlashAttribute("error", "El cliente no existe en la base de datos");
 			return "redirect:/listar";
 		}
+
 		model.put("cliente", cliente);
 		model.put("titulo", "Detalle cliente: " + cliente.getNombre());
-
 		return "ver";
 	}
 
 	@RequestMapping(value = "/listar", method = RequestMethod.GET)
-	public String listar(@RequestParam(name = "page", defaultValue = "0") int page, Model model) {
-
-		Pageable pageRequest = PageRequest.of(page, 5);
-
+	public String listar(@RequestParam(name="page", defaultValue="0") int page, Model model) {
+		
+		Pageable pageRequest = PageRequest.of(page, 4);
+		
 		Page<Cliente> clientes = clienteService.findAll(pageRequest);
-
-		PageRender<Cliente> pageRender = new PageRender<>("/listar", clientes);
+		
+		PageRender<Cliente> pageRender = new PageRender<Cliente>("/listar", clientes);
 		model.addAttribute("titulo", "Listado de clientes");
 		model.addAttribute("clientes", clientes);
 		model.addAttribute("page", pageRender);
@@ -74,22 +74,23 @@ public class ClienteController {
 
 		Cliente cliente = new Cliente();
 		model.put("cliente", cliente);
-		model.put("titulo", "Formulario de Clientes");
+		model.put("titulo", "Formulario de Cliente");
 		return "form";
 	}
 
-	@RequestMapping("/form/{id}")
+	@RequestMapping(value = "/form/{id}")
 	public String editar(@PathVariable(value = "id") Long id, Map<String, Object> model, RedirectAttributes flash) {
 
 		Cliente cliente = null;
+
 		if (id > 0) {
 			cliente = clienteService.findOne(id);
 			if (cliente == null) {
-				flash.addFlashAttribute("error", "El ID de cliente no existe en la DDBB");
+				flash.addFlashAttribute("error", "El ID del cliente no existe en la BBDD!");
 				return "redirect:/listar";
 			}
 		} else {
-			flash.addFlashAttribute("error", "El ID del cliente no puede ser cero");
+			flash.addFlashAttribute("error", "El ID del cliente no puede ser cero!");
 			return "redirect:/listar";
 		}
 		model.put("cliente", cliente);
@@ -98,35 +99,37 @@ public class ClienteController {
 	}
 
 	@RequestMapping(value = "/form", method = RequestMethod.POST)
-	public String guardar(@Valid Cliente cliente, BindingResult result, Model model,
+	public String guardar(@Valid Cliente cliente, BindingResult result, Model model, 
 			@RequestParam("file") MultipartFile foto, RedirectAttributes flash, SessionStatus status) {
+		
 		if (result.hasErrors()) {
 			model.addAttribute("titulo", "Formulario de Cliente");
 			return "form";
 		}
-
+		
 		if (!foto.isEmpty()) {
-			String uniqueFilename = UUID.randomUUID().toString() + "_" + foto.getName();
-			Path rootPath = Paths.get("uploads").resolve(foto.getOriginalFilename());
+
+			String uniqueFilename = UUID.randomUUID().toString() + "_" + foto.getOriginalFilename();
+			Path rootPath = Paths.get("uploads").resolve(uniqueFilename);
 
 			Path rootAbsolutPath = rootPath.toAbsolutePath();
-
+			
 			log.info("rootPath: " + rootPath);
 			log.info("rootAbsolutPath: " + rootAbsolutPath);
- 
+
 			try {
+
 				Files.copy(foto.getInputStream(), rootAbsolutPath);
+				
 				flash.addFlashAttribute("info", "Has subido correctamente '" + uniqueFilename + "'");
 
 				cliente.setFoto(uniqueFilename);
+
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		} else {
-
 		}
-
+		
 		String mensajeFlash = (cliente.getId() != null) ? "Cliente editado con éxito!" : "Cliente creado con éxito!";
 
 		clienteService.save(cliente);
@@ -137,9 +140,10 @@ public class ClienteController {
 
 	@RequestMapping(value = "/eliminar/{id}")
 	public String eliminar(@PathVariable(value = "id") Long id, RedirectAttributes flash) {
+
 		if (id > 0) {
 			clienteService.delete(id);
-			flash.addFlashAttribute("success", "Cliente eliminado con exito");
+			flash.addFlashAttribute("success", "Cliente eliminado con éxito!");
 		}
 		return "redirect:/listar";
 	}
