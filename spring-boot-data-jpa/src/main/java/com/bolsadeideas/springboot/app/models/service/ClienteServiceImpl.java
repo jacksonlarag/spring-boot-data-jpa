@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bolsadeideas.springboot.app.models.dao.IClienteDao;
+import com.bolsadeideas.springboot.app.models.dao.IProductoDao;
 import com.bolsadeideas.springboot.app.models.entity.Cliente;
 
 @Service
@@ -16,7 +17,10 @@ public class ClienteServiceImpl implements IClienteService {
 
 	@Autowired
 	private IClienteDao clienteDao;
-
+	
+	@Autowired
+	private IProductoDao productoDao;
+	
 	@Override
 	@Transactional(readOnly = true)
 	public List<Cliente> findAll() {
