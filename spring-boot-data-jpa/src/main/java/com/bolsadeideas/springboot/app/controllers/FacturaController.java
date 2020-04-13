@@ -8,6 +8,7 @@ import javax.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -27,6 +28,7 @@ import com.bolsadeideas.springboot.app.models.entity.ItemFactura;
 import com.bolsadeideas.springboot.app.models.entity.Producto;
 import com.bolsadeideas.springboot.app.models.service.IClienteService;
 
+@Secured("ROLE_ADMIN")
 @Controller
 @RequestMapping("/factura")
 @SessionAttributes("factura")
@@ -35,8 +37,26 @@ public class FacturaController {
 	private IClienteService clienteService;
 	
 	private final Logger log = LoggerFactory.getLogger(getClass());
+	
+	@GetMapping("/ver/{id}")
+	public String ver(@PathVariable(value = "id") Long id,
+			Model model,
+			RedirectAttributes flash) {
+		//Factura factura = clienteService.findFacturaById(id);
+		Factura factura = clienteService.fetchByIdWithClienteWithItemFacturaWithProducto(id);
+		
+		if(factura == null) {
+			flash.addFlashAttribute("Error", "La factura no existe en la base de datos");
+			return "redirect:/listar";
+		}
+		model.addAttribute("factura", factura);
+		model.addAttribute("titulo", "Factura : ".concat(factura.getDescripcion()));
+		
+		return "factura/ver";
+		
+	}
 
-	@GetMapping("/form//{clienteId}")
+	@GetMapping("/form/{clienteId}")
 	public String crear(@PathVariable(value = "clienteId") Long clienteId, 
 			Map<String, Object> model,
 			RedirectAttributes flash) {
@@ -97,5 +117,19 @@ public class FacturaController {
 		flash.addFlashAttribute("Success", "Factura creada con éxito!");
 		
 		return "redirect:/ver/" + factura.getCliente().getId();
+	}
+	
+	@GetMapping("/eliminar/{id}")
+	public String eliminar(@PathVariable(value = "id") Long id, RedirectAttributes flash ) {
+		
+		Factura factura = clienteService.findFacturaById(id);
+		
+		if(factura != null) {
+			clienteService.deleteFactura(id);
+			flash.addFlashAttribute("success", "Factura eliminada con éxito");
+			return "redirect:/ver/"+factura.getCliente().getId();
+		}
+		flash.addFlashAttribute("error", "La factura no existe en la base de datos, no se pudo eliminar!");
+		return "redirect:/listar";
 	}
 }
